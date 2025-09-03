@@ -16,9 +16,8 @@ blueprint:
     
     Required Input = *
   domain: automation
-  source_url: https://github.com/muratcesmecioglu/ha-movie-mode/blob/main/movie-mode.yaml
+  source_url: https://github.com/filipsjolanderr/ha-movie-mode/blob/main/movie-mode.yaml
 
-# The 'input:' block below was moved to this top-level indentation.
 input:
   media_player:
     name: Media Player *
@@ -185,7 +184,6 @@ trigger:
     to: !input trigger_off_state
 
 condition:
-  # Only proceed if app condition is met, or if no app condition is specified.
   - condition: template
     value_template: >
       {{ app_cond == [] or 
@@ -194,7 +192,6 @@ condition:
 
 action:
   - choose:
-      # === CASE 1: Media starts playing ===
       - conditions:
           - condition: trigger
             id: 't_play'
@@ -204,15 +201,11 @@ action:
           - condition: time
             after: !input start_time
         sequence:
-          # STEP 1: Save the current state of all lights into a temporary scene.
           - service: scene.create
             data:
               scene_id: "{{ scene_id }}"
               snapshot_entities: "{{ all_lights }}"
-          
-          # STEP 2: Choose whether to notify or act immediately.
           - choose:
-              # If a notification target is set, send a notification and wait.
               - conditions:
                   - condition: template
                     value_template: "{{ notify_target != '' }}"
@@ -234,9 +227,6 @@ action:
                           action: "ENABLE_MOVIE_MODE"
                     timeout: "00:02:00"
                     continue_on_timeout: false
-          
-          # STEP 3: If notification was approved (or if no notification was sent), apply movie scene.
-          # This runs if the 'wait_for_trigger' succeeded or if the notification step was skipped.
           - service: input_boolean.turn_on
             target:
               entity_id: !input movie_mode_helper
@@ -249,8 +239,6 @@ action:
             data:
               brightness_pct: !input dim_brightness
               transition: !input transition_time
-
-      # === CASE 2: Media is paused ===
       - conditions:
           - condition: trigger
             id: 't_pause'
@@ -258,14 +246,11 @@ action:
             entity_id: !input movie_mode_helper
             state: 'on'
         sequence:
-          # Restore the lights from the snapshot.
           - service: scene.turn_on
             target:
               entity_id: "scene.{{ scene_id }}"
             data:
               transition: !input transition_time
-
-      # === CASE 3: Media is resumed after being paused ===
       - conditions:
           - condition: trigger
             id: 't_play'
@@ -273,7 +258,6 @@ action:
             entity_id: !input movie_mode_helper
             state: 'on'
         sequence:
-          # Re-apply the movie scene.
           - service: homeassistant.turn_off
             target: !input lights_off
             data:
@@ -283,8 +267,6 @@ action:
             data:
               brightness_pct: !input dim_brightness
               transition: !input transition_time
-
-      # === CASE 4: Media is stopped ===
       - conditions:
           - condition: trigger
             id: 't_off'
@@ -292,7 +274,6 @@ action:
             entity_id: !input movie_mode_helper
             state: 'on'
         sequence:
-          # Turn off the movie mode helper and restore the lights.
           - service: input_boolean.turn_off
             target:
               entity_id: !input movie_mode_helper
