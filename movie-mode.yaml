@@ -16,7 +16,7 @@ blueprint:
     
     Required Input = *
   domain: automation
-  source_url: https://github.com/muratcesmecioglu/ha-movie-mode/blob/main/movie-mode.yaml
+  source_url: https://github.com/filipsjolanderr/ha-movie-mode/blob/main/movie-mode.yaml
 
 # The 'input:' block below was moved to this top-level indentation.
 input:
