@@ -141,6 +141,7 @@ input:
   notify_target:
     name: Notification Target (Optional)
     description: "Device to send the actionable notification to (e.g., mobile_app_your_phone)."
+    default: ""
     selector:
       text:
   
@@ -165,6 +166,7 @@ variables:
     {{ expand(lights_off.entity_id, lights_dim.entity_id) | map(attribute='entity_id') | list }}
   app_cond: !input app_cond
   media_player: !input media_player
+  notify_target: !input notify_target
   scene_id: "movie_mode_snapshot_{{ this.entity_id }}"
 
 trigger:
@@ -206,13 +208,15 @@ action:
             data:
               scene_id: "{{ scene_id }}"
               snapshot_entities: "{{ all_lights }}"
-
+          
           # STEP 2: Choose whether to notify or act immediately.
           - choose:
               # If a notification target is set, send a notification and wait.
-              - conditions: "{{ !input notify_target != '' }}"
+              - conditions:
+                  - condition: template
+                    value_template: "{{ notify_target != '' }}"
                 sequence:
-                  - service: "notify.{{ !input notify_target }}"
+                  - service: "notify.{{ notify_target }}"
                     data:
                       title: !input notify_title
                       message: !input notify_message
@@ -229,8 +233,9 @@ action:
                           action: "ENABLE_MOVIE_MODE"
                     timeout: "00:02:00"
                     continue_on_timeout: false
-            
-            # STEP 3: If notification approved (or no notification set), apply movie scene.
+          
+          # STEP 3: If notification was approved (or if no notification was sent), apply movie scene.
+          # This runs if the 'wait_for_trigger' succeeded or if the notification step was skipped.
           - service: input_boolean.turn_on
             target:
               entity_id: !input movie_mode_helper
